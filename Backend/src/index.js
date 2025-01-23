@@ -23,7 +23,14 @@ app.use(express.json());
 
 
 // app.use(cors(corsOptions));
-app.use(cors());
+// app.use(cors());
+const corsOptions = {
+  origin: 'https://multi-factor-auth-frontend.onrender.com', // Specify exact frontend origin
+  credentials: true, // Important for handling credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'] // Specify allowed headers
+};
+app.use(cors(corsOptions));
 app.use(json({ limit: "100mb" }));
 app.use(urlencoded({ limit: "100mb", extended: true }));
 app.use(
