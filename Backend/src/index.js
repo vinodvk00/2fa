@@ -7,6 +7,9 @@ import dbConnect from "./config/dbConnect.js";
 import authRoutes from "./routes/authRoutes.js";
 import "./config/passportConfig.js";
 
+import MongoStore from "connect-mongo";
+
+
 dotenv.config();
 
 dbConnect();
@@ -24,22 +27,52 @@ app.use(express.json());
 
 // app.use(cors(corsOptions));
 // app.use(cors());
+// const corsOptions = {
+//   origin: 'https://multi-factor-auth-frontend.onrender.com', // Specify exact frontend origin
+//   credentials: true, // Important for handling credentials
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
+//   allowedHeaders: ['Content-Type', 'Authorization'] // Specify allowed headers
+// };
+
 const corsOptions = {
-  origin: 'https://multi-factor-auth-frontend.onrender.com', // Specify exact frontend origin
-  credentials: true, // Important for handling credentials
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization'] // Specify allowed headers
+  origin: [
+    'https://multi-factor-auth-frontend.onrender.com', // Deployed frontend
+    'http://localhost:3001', // Local development
+  ],
+  credentials: true, // To allow cookies to be sent
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 };
+app.use(cors(corsOptions));
+
+
+
 app.use(cors(corsOptions));
 app.use(json({ limit: "100mb" }));
 app.use(urlencoded({ limit: "100mb", extended: true }));
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET || "secret",
+//     resave: false,
+//     saveUninitialized: false,
+//     cookie: {
+//       maxAge: 1000 * 60 * 60,
+//     },
+//   })
+// );
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "secret",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.CONNECTION_STRING, // MongoDB connection string
+    }),
     cookie: {
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 60, // 1 hour
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      httpOnly: true, // Helps protect against XSS
     },
   })
 );
@@ -54,4 +87,9 @@ app.use("/api/auth", authRoutes);
 const PORT = process.env.PORT || 7002;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: "Something went wrong!" });
 });
